@@ -17,16 +17,68 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function numeroALetras(num) {
-        if (num === null || num === undefined) return "Cero pesos 00/100 M.N.";
+        if (num === null || num === undefined) {
+            return "Cero pesos 00/100 M.N.";
+        }
+
         var numero = parseFloat(num).toFixed(2);
         var [entero, decimales] = numero.split('.');
+
         var unidades = ["", "un ", "dos ", "tres ", "cuatro ", "cinco ", "seis ", "siete ", "ocho ", "nueve "];
         var decenas = ["diez ", "once ", "doce ", "trece ", "catorce ", "quince ", "dieciséis ", "diecisiete ", "dieciocho ", "diecinueve "];
         var veintenas = ["", "", "veinte ", "treinta ", "cuarenta ", "cincuenta ", "sesenta ", "setenta ", "ochenta ", "noventa "];
-        var convertirCentenas = function(n) { var c = Math.floor(n / 100); if (n > 99) { if (n == 100) return "cien "; else return ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c]; } return ""; };
-        var convertirDecenas = function(n) { n = n % 100; if (n === 0) return ""; if (n < 10) return unidades[n]; if (n < 20) return decenas[n - 10]; if (n > 20 && n < 30) return "veinti" + unidades[n % 10]; var d = Math.floor(n / 10); var u = n % 10; return veintenas[d] + (u > 0 ? "y " + unidades[u] : ""); };
-        var convertirMiles = function(n) { if (n < 1000) return convertirCentenas(n) + convertirDecenas(n); var miles = Math.floor(n / 1000); var resto = n % 1000; var milesTexto = miles === 1 ? "mil " : convertirCentenas(miles) + convertirDecenas(miles) + "mil "; var restoTexto = convertirCentenas(resto) + convertirDecenas(resto); return milesTexto + restoTexto; };
-        var enteroLetras = parseInt(entero) > 0 ? convertirMiles(parseInt(entero)) : "cero";
+
+        var convertirCentenas = function(n) {
+            var centenas = "";
+            if (n > 99) {
+                if (n == 100) centenas = "cien ";
+                else {
+                    var c = Math.floor(n / 100);
+                    centenas = ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c];
+                }
+            }
+            return centenas;
+        };
+
+        // ✨ FUNCIÓN CORREGIDA ✨
+        var convertirDecenas = function(n) {
+            n = n % 100;
+            if (n === 0) return "";
+            if (n < 10) return unidades[n];
+            if (n < 20) return decenas[n - 10];
+            
+            // Corrección para la veintena
+            if (n > 20 && n < 30) {
+                return "veinti" + unidades[n % 10];
+            }
+
+            var d = Math.floor(n / 10);
+            var u = n % 10;
+            // Para 20, 30, 40, etc., y números compuestos como 31, 42...
+            return veintenas[d] + (u > 0 ? "y " + unidades[u] : "");
+        };
+
+        var convertirMiles = function(n) {
+            if (n < 1000) return convertirCentenas(n) + convertirDecenas(n);
+            var miles = Math.floor(n / 1000);
+            var resto = n % 1000;
+            var milesTexto = "";
+
+            if (miles === 1) {
+                milesTexto = "mil ";
+            } else {
+                milesTexto = convertirCentenas(miles) + convertirDecenas(miles) + "mil ";
+            }
+
+            var restoTexto = convertirCentenas(resto) + convertirDecenas(resto);
+            return milesTexto + restoTexto;
+        };
+
+        var enteroLetras = "cero";
+        if (parseInt(entero) > 0) {
+            enteroLetras = convertirMiles(parseInt(entero));
+        }
+        
         var resultado = enteroLetras.trim() + " pesos " + decimales + "/100 M.N.";
         return resultado.charAt(0).toUpperCase() + resultado.slice(1);
     }
@@ -94,11 +146,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== EVENT LISTENERS =====
     get('cotizacion-list').addEventListener('input', function(e) {
         if (e.target.classList.contains('cantidad-input-list')) {
-            var id = e.target.closest('.list-item').dataset.id;
+            var listItem = e.target.closest('.list-item');
+            if (!listItem) return;
+
+            var id = listItem.dataset.id;
             var newQuantity = parseInt(e.target.value, 10) || 0;
-            var item = quoteItems.find(function(item) { return item.id == id; });
-            if (item) item.quantity = newQuantity;
-            renderViews();
+
+            // 1. Actualiza los datos en el array
+            var item = quoteItems.find(function(q) { return q.id == id; });
+            var product = products.find(function(p) { return p.id == id; });
+            
+            if (!item || !product) return;
+            item.quantity = newQuantity;
+
+            // 2. Actualiza solo el subtotal de la fila actual, sin redibujar todo
+            var subtotal = item.quantity * product.price;
+            var subtotalElement = listItem.querySelector('.item-subtotal');
+            if (subtotalElement) {
+                subtotalElement.textContent = formatCurrency(subtotal);
+            }
+
+            // 3. Recalcula y actualiza el total general
+            var grandTotal = 0;
+            quoteItems.forEach(function(quoteItem) {
+                var associatedProduct = products.find(function(p) { return p.id == quoteItem.id; });
+                if (associatedProduct) {
+                    grandTotal += quoteItem.quantity * associatedProduct.price;
+                }
+            });
+            get('total-cotizacion-list').textContent = formatCurrency(grandTotal);
+            get('total-en-letra').textContent = numeroALetras(grandTotal);
+
+            // 4. Mantiene la tabla oculta del PDF sincronizada (esto es seguro)
+            renderPdfTable();
         }
     });
 

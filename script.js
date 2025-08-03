@@ -262,11 +262,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     get('cotizacion-list').addEventListener('input', function(e) {
         if (e.target.classList.contains('cantidad-input-list')) {
-            var id = e.target.closest('.list-item').dataset.id;
+            var listItem = e.target.closest('.list-item');
+            if (!listItem) return;
+
+            var id = listItem.dataset.id;
             var newQuantity = parseInt(e.target.value, 10) || 0;
-            var item = quoteItems.find(function(item) { return item.id == id; });
-            if (item) item.quantity = newQuantity;
-            renderViews();
+
+            // 1. Actualiza los datos en el array
+            var item = quoteItems.find(function(q) { return q.id == id; });
+            var product = products.find(function(p) { return p.id == id; });
+            
+            if (!item || !product) return;
+            item.quantity = newQuantity;
+
+            // 2. Actualiza solo el subtotal de la fila actual, sin redibujar todo
+            var subtotal = item.quantity * product.price;
+            var subtotalElement = listItem.querySelector('.item-subtotal');
+            if (subtotalElement) {
+                subtotalElement.textContent = formatCurrency(subtotal);
+            }
+
+            // 3. Recalcula y actualiza el total general
+            var grandTotal = 0;
+            quoteItems.forEach(function(quoteItem) {
+                var associatedProduct = products.find(function(p) { return p.id == quoteItem.id; });
+                if (associatedProduct) {
+                    grandTotal += quoteItem.quantity * associatedProduct.price;
+                }
+            });
+            get('total-cotizacion-list').textContent = formatCurrency(grandTotal);
+            get('total-en-letra').textContent = numeroALetras(grandTotal);
+
+            // 4. Mantiene la tabla oculta del PDF sincronizada (esto es seguro)
+            renderPdfTable();
         }
     });
 
