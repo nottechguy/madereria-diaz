@@ -2,7 +2,7 @@
     "name": "Cotizador Maderería Díaz",
     "short_name": "Maderería Díaz",
     "description": "Aplicación para generar cotizaciones de productos de madera.",
-    "start_url": "/index.html",
+    "start_url": "https://nottechguy.github.io/madereria-diaz/",
     "display": "standalone",
     "background_color": "#ecf0f1",
     "theme_color": "#2c3e50",
