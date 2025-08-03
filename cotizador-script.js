@@ -16,72 +16,84 @@ document.addEventListener('DOMContentLoaded', function() {
         return '$' + formattedAmount;
     };
 
-    function numeroALetras(num) {
-        if (num === null || num === undefined) {
-            return "Cero pesos 00/100 M.N.";
+function numeroALetras(num) {
+    if (num === null || num === undefined) {
+        return "Cero pesos 00/100 M.N.";
+    }
+
+    var numero = parseFloat(num).toFixed(2);
+    var [entero, decimales] = numero.split('.');
+
+    var unidades = ["", "un ", "dos ", "tres ", "cuatro ", "cinco ", "seis ", "siete ", "ocho ", "nueve "];
+    var decenas = ["diez ", "once ", "doce ", "trece ", "catorce ", "quince ", "dieciséis ", "diecisiete ", "dieciocho ", "diecinueve "];
+    var veintenas = ["", "", "veinte ", "treinta ", "cuarenta ", "cincuenta ", "sesenta ", "setenta ", "ochenta ", "noventa "];
+
+    var convertirDecenas = function(n) {
+        n = n % 100;
+        if (n === 0) return "";
+        if (n < 10) return unidades[n];
+        if (n < 20) return decenas[n - 10];
+        if (n > 20 && n < 30) return "veinti" + unidades[n % 10];
+        var d = Math.floor(n / 10);
+        var u = n % 10;
+        return veintenas[d] + (u > 0 ? "y " + unidades[u] : "");
+    };
+
+    var convertirCentenas = function(n) {
+        var centenas = "";
+        if (n > 99) {
+            if (n == 100) centenas = "cien ";
+            else {
+                var c = Math.floor(n / 100);
+                centenas = ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c];
+            }
         }
+        return centenas;
+    };
 
-        var numero = parseFloat(num).toFixed(2);
-        var [entero, decimales] = numero.split('.');
+    var convertirMiles = function(n) {
+        if (n < 1000) return convertirCentenas(n) + convertirDecenas(n);
+        var miles = Math.floor(n / 1000);
+        var resto = n % 1000;
+        var milesTexto = "";
 
-        var unidades = ["", "un ", "dos ", "tres ", "cuatro ", "cinco ", "seis ", "siete ", "ocho ", "nueve "];
-        var decenas = ["diez ", "once ", "doce ", "trece ", "catorce ", "quince ", "dieciséis ", "diecisiete ", "dieciocho ", "diecinueve "];
-        var veintenas = ["", "", "veinte ", "treinta ", "cuarenta ", "cincuenta ", "sesenta ", "setenta ", "ochenta ", "noventa "];
+        if (miles === 1) {
+            milesTexto = "mil ";
+        } else {
+            milesTexto = convertirCentenas(miles) + convertirDecenas(miles) + "mil ";
+        }
+        var restoTexto = convertirCentenas(resto) + convertirDecenas(resto);
+        return milesTexto + restoTexto;
+    };
 
-        var convertirCentenas = function(n) {
-            var centenas = "";
-            if (n > 99) {
-                if (n == 100) centenas = "cien ";
-                else {
-                    var c = Math.floor(n / 100);
-                    centenas = ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c];
-                }
-            }
-            return centenas;
-        };
+    // ✨ NUEVA FUNCIÓN PARA MANEJAR MILLONES ✨
+    var convertirMillones = function(n) {
+        if (n < 1000000) return convertirMiles(n);
+        
+        var millones = Math.floor(n / 1000000);
+        var resto = n % 1000000;
+        var millonesTexto = "";
 
-        // ✨ FUNCIÓN CORREGIDA ✨
-        var convertirDecenas = function(n) {
-            n = n % 100;
-            if (n === 0) return "";
-            if (n < 10) return unidades[n];
-            if (n < 20) return decenas[n - 10];
-            
-            // Corrección para la veintena
-            if (n > 20 && n < 30) {
-                return "veinti" + unidades[n % 10];
-            }
-
-            var d = Math.floor(n / 10);
-            var u = n % 10;
-            // Para 20, 30, 40, etc., y números compuestos como 31, 42...
-            return veintenas[d] + (u > 0 ? "y " + unidades[u] : "");
-        };
-
-        var convertirMiles = function(n) {
-            if (n < 1000) return convertirCentenas(n) + convertirDecenas(n);
-            var miles = Math.floor(n / 1000);
-            var resto = n % 1000;
-            var milesTexto = "";
-
-            if (miles === 1) {
-                milesTexto = "mil ";
-            } else {
-                milesTexto = convertirCentenas(miles) + convertirDecenas(miles) + "mil ";
-            }
-
-            var restoTexto = convertirCentenas(resto) + convertirDecenas(resto);
-            return milesTexto + restoTexto;
-        };
-
-        var enteroLetras = "cero";
-        if (parseInt(entero) > 0) {
-            enteroLetras = convertirMiles(parseInt(entero));
+        if (millones === 1) {
+            millonesTexto = "un millón ";
+        } else {
+            // Llama a la función de miles para convertir el número de millones
+            millonesTexto = convertirMiles(millones) + "millones ";
         }
         
-        var resultado = enteroLetras.trim() + " pesos " + decimales + "/100 M.N.";
-        return resultado.charAt(0).toUpperCase() + resultado.slice(1);
+        var restoTexto = convertirMiles(resto);
+        return millonesTexto + restoTexto;
+    };
+
+    var enteroLetras = "cero";
+    if (parseInt(entero) > 0) {
+        // Se llama a la nueva función de más alto nivel
+        enteroLetras = convertirMillones(parseInt(entero));
     }
+    
+    var resultado = enteroLetras.trim() + " pesos " + decimales + "/100 M.N.";
+    return resultado.charAt(0).toUpperCase() + resultado.slice(1);
+}
 
     var loadProductsFromLocalStorage = function() {
         var stored = localStorage.getItem('madereria_products');
