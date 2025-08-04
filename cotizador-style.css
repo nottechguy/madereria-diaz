@@ -115,6 +115,7 @@ button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; 
     gap: 8px;
     padding-bottom: 16px;
     margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
     font-weight: normal;
 }
 .iva-toggle label {
@@ -122,6 +123,7 @@ button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; 
 }
 
 .totals-breakdown {
+    display: flex;
     flex-direction: column;
     gap: 8px;
     width: 100%;

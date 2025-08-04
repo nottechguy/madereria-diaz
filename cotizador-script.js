@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var quoteItems = [];
     var get = function(id) { return document.getElementById(id); };
 
-    // ===== FUNCIONES PRINCIPALES =====
+    // ===== FUNCIONES AUXILIARES =====
     var formatCurrency = function(amount) {
         var formattedAmount = parseFloat(amount || 0).toLocaleString('es-MX', {
             minimumFractionDigits: 2,
@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var resultado = enteroLetras.trim() + " pesos" + parteDecimal;
         return resultado.charAt(0).toUpperCase() + resultado.slice(1);
     }
+
     var loadProductsFromLocalStorage = function() {
         var stored = localStorage.getItem('madereria_products');
         products = stored && JSON.parse(stored).length > 0 ? JSON.parse(stored) : initialProducts;
@@ -84,23 +85,18 @@ document.addEventListener('DOMContentLoaded', function() {
         renderMaterialList();
         renderPdfTable();
         renderProductSelector();
-        var accionesFinales = document.querySelector('.acciones-finales');
-        if (quoteItems.length > 0) {
-            accionesFinales.classList.remove('hidden');
-        } else {
-            accionesFinales.classList.add('hidden');
-        }
     };
 
     var renderMaterialList = function() {
         var listContainer = get('cotizacion-list');
         listContainer.innerHTML = '';
-        var total = 0;
+        var subtotal = 0;
         quoteItems.forEach(function(item) {
             var product = products.find(function(p) { return p.id == item.id; });
             if (!product) return;
-            var subtotal = item.quantity * product.price;
-            total += subtotal;
+            var itemSubtotal = item.quantity * product.price;
+            subtotal += itemSubtotal;
+
             var listItem = document.createElement('div');
             listItem.className = 'list-item';
             listItem.dataset.id = item.id;
@@ -112,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             Cantidad: <input type="number" value="${item.quantity}" min="1" class="cantidad-input-list"> @ ${formatCurrency(product.price)}
                         </span>
                     </div>
-                    <div class="item-subtotal">${formatCurrency(subtotal)}</div>
+                    <div class="item-subtotal">${formatCurrency(itemSubtotal)}</div>
                 </div>
                 <div class="item-actions">
                     <button class="btn-delete-item" title="Quitar producto">
@@ -121,8 +117,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`;
             listContainer.appendChild(listItem);
         });
-        get('total-cotizacion-list').textContent = formatCurrency(total);
+
+        var ivaCheckbox = get('iva-checkbox');
+        var breakdownContainer = get('totals-breakdown');
+        var iva = 0;
+        var total = subtotal;
+
+        if (ivaCheckbox.checked) {
+            iva = subtotal * 0.16;
+            total = subtotal + iva;
+            breakdownContainer.innerHTML = `
+                <div class="total-line"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
+                <div class="total-line"><span>IVA (16%)</span><span>${formatCurrency(iva)}</span></div>
+                <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
+        } else {
+            breakdownContainer.innerHTML = `<div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
+        }
+        
         get('total-en-letra').textContent = numeroALetras(total);
+        
+        var accionesFinales = document.querySelector('.acciones-finales');
+        if (quoteItems.length > 0) {
+            accionesFinales.classList.remove('hidden');
+        } else {
+            accionesFinales.classList.add('hidden');
+        }
     };
 
     var renderPdfTable = function() {
@@ -134,29 +153,24 @@ document.addEventListener('DOMContentLoaded', function() {
         products.forEach(function(p) { select.innerHTML += `<option value="${p.id}">${p.name} - ${formatCurrency(p.price)}</option>`; });
     };
 
+    // ===== EVENT LISTENERS =====
     get('cotizacion-list').addEventListener('input', function(e) {
         if (e.target.classList.contains('cantidad-input-list')) {
             var listItem = e.target.closest('.list-item');
             if (!listItem) return;
-
             var id = listItem.dataset.id;
             var newQuantity = parseInt(e.target.value, 10) || 0;
-
-            // 1. Actualiza los datos en el array
             var item = quoteItems.find(function(q) { return q.id == id; });
             var product = products.find(function(p) { return p.id == id; });
-            
             if (!item || !product) return;
             item.quantity = newQuantity;
 
-            // 2. Actualiza solo el subtotal de la fila actual, sin redibujar todo
             var itemSubtotal = item.quantity * product.price;
             var subtotalElement = listItem.querySelector('.item-subtotal');
             if (subtotalElement) {
                 subtotalElement.textContent = formatCurrency(itemSubtotal);
             }
-
-            // 3. Recalcula y actualiza el desglose de totales
+            
             var subtotal = 0;
             quoteItems.forEach(function(quoteItem) {
                 var associatedProduct = products.find(function(p) { return p.id == quoteItem.id; });
@@ -167,28 +181,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var ivaCheckbox = get('iva-checkbox');
             var breakdownContainer = get('totals-breakdown');
-            var iva = 0;
             var total = subtotal;
 
             if (ivaCheckbox.checked) {
-                iva = subtotal * 0.16;
+                var iva = subtotal * 0.16;
                 total = subtotal + iva;
                 breakdownContainer.innerHTML = `
                     <div class="total-line"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
                     <div class="total-line"><span>IVA (16%)</span><span>${formatCurrency(iva)}</span></div>
-                    <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>
-                `;
+                    <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
             } else {
-                breakdownContainer.innerHTML = `
-                    <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>
-                `;
+                breakdownContainer.innerHTML = `<div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
             }
             get('total-en-letra').textContent = numeroALetras(total);
-
-            // 4. Mantiene la tabla oculta del PDF sincronizada (esto es seguro)
-            // Esta función no la tenemos, pero la lógica se puede añadir si es necesaria.
-            // Por ahora, el PDF se genera al hacer clic en el botón, por lo que no es 
-            // necesario actualizar la tabla PDF en tiempo real.
+            renderPdfTable();
         }
     });
 
@@ -216,6 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
             renderViews();
         }
     });
+
+    get('iva-checkbox').addEventListener('change', renderViews);
 
     get('btn-exportar-pdf').addEventListener('click', async function() {
         function loadImageAsDataURL(url) {

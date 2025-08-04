@@ -34,11 +34,13 @@
         </section>
 
         <div id="cotizacion-list-container">
-            <div id="cotizacion-list" class="material-list">
-                </div>
+            <div id="cotizacion-list" class="material-list"></div>
             <div class="total-container">
-                <span>TOTAL</span>
-                <span id="total-cotizacion-list">$0.00</span>
+                <div class="iva-toggle">
+                    <input type="checkbox" id="iva-checkbox">
+                    <label for="iva-checkbox">Agregar IVA (16%)</label>
+                </div>
+                <div id="totals-breakdown" class="totals-breakdown"></div>
             </div>
             <div id="total-en-letra" class="total-en-letra-container"></div>
         </div>
