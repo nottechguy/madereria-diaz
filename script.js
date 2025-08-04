@@ -115,9 +115,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         var enteroLetras = parseInt(entero) > 0 ? convertirMillones(parseInt(entero)) : "cero";
-        
-        // ✨ LÓGICA MODIFICADA ✨
-        // Comprueba si los decimales son mayores a "00"
         var parteDecimal = parseInt(decimales) > 0 ? " " + decimales + "/100 M.N." : " 00/100 M.N.";
         
         var resultado = enteroLetras.trim() + " pesos" + parteDecimal;
@@ -256,20 +253,57 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.classList.contains('cantidad-input-list')) {
             var listItem = e.target.closest('.list-item');
             if (!listItem) return;
+
             var id = listItem.dataset.id;
             var newQuantity = parseInt(e.target.value, 10) || 0;
-            var item = quoteItems.find(function(q) { return q.id == id; });
-            if (item) item.quantity = newQuantity;
-            renderViews();
-        }
-    });
 
-    get('cotizacion-list').addEventListener('click', function(e) {
-        var deleteButton = e.target.closest('.btn-delete-item');
-        if (deleteButton) {
-            var id = deleteButton.closest('.list-item').dataset.id;
-            quoteItems = quoteItems.filter(function(item) { return item.id != id; });
-            renderViews();
+            // 1. Actualiza los datos en el array
+            var item = quoteItems.find(function(q) { return q.id == id; });
+            var product = products.find(function(p) { return p.id == id; });
+            
+            if (!item || !product) return;
+            item.quantity = newQuantity;
+
+            // 2. Actualiza solo el subtotal de la fila actual, sin redibujar todo
+            var itemSubtotal = item.quantity * product.price;
+            var subtotalElement = listItem.querySelector('.item-subtotal');
+            if (subtotalElement) {
+                subtotalElement.textContent = formatCurrency(itemSubtotal);
+            }
+
+            // 3. Recalcula y actualiza el desglose de totales
+            var subtotal = 0;
+            quoteItems.forEach(function(quoteItem) {
+                var associatedProduct = products.find(function(p) { return p.id == quoteItem.id; });
+                if (associatedProduct) {
+                    subtotal += quoteItem.quantity * associatedProduct.price;
+                }
+            });
+
+            var ivaCheckbox = get('iva-checkbox');
+            var breakdownContainer = get('totals-breakdown');
+            var iva = 0;
+            var total = subtotal;
+
+            if (ivaCheckbox.checked) {
+                iva = subtotal * 0.16;
+                total = subtotal + iva;
+                breakdownContainer.innerHTML = `
+                    <div class="total-line"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
+                    <div class="total-line"><span>IVA (16%)</span><span>${formatCurrency(iva)}</span></div>
+                    <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>
+                `;
+            } else {
+                breakdownContainer.innerHTML = `
+                    <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>
+                `;
+            }
+            get('total-en-letra').textContent = numeroALetras(total);
+
+            // 4. Mantiene la tabla oculta del PDF sincronizada (esto es seguro)
+            // Esta función no la tenemos, pero la lógica se puede añadir si es necesaria.
+            // Por ahora, el PDF se genera al hacer clic en el botón, por lo que no es 
+            // necesario actualizar la tabla PDF en tiempo real.
         }
     });
 
