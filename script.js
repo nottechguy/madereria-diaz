@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var dia = ('0' + fechaActual.getDate()).slice(-2);
             var mes = ('0' + (fechaActual.getMonth() + 1)).slice(-2); // Se suma 1 porque los meses empiezan en 0
             var anio = fechaActual.getFullYear();
-            var fechaFormateada = dia + '/' + anio;
+            var fechaFormateada = dia + '/' + mes + '/' + anio;
             doc.text("Fecha: " + fechaFormateada, margin + 35, y);
 
             y += 12;
