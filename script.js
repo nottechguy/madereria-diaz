@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var get = function(id) { return document.getElementById(id); };
 
     // ===== NAVEGACIÓN Y VISTAS =====
-    var infoClientes = get('cotizacion-cliente');
     var cotizadorView = get('cotizador-view');
     var productosView = get('productos-view');
     var navCotizador = get('nav-cotizador');
@@ -17,17 +16,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var menuToggle = get('menu-toggle');
 
     var showView = function(viewToShow) {
-        console.log(viewToShow);
         [cotizadorView, productosView].forEach(function(view) { view.classList.add('hidden'); });
         viewToShow.classList.remove('hidden');
         [navCotizador, navProductos].forEach(function(nav) { nav.classList.remove('active'); });
         sidebar.classList.remove('open');
-        
-        if (viewToShow.getAttribute('id') == 'cotizador-view') {
-            infoClientes.style.display = "block";
-        } else {
-            infoClientes.style.display = "none";
-        }
     };
 
     navCotizador.addEventListener('click', function(e) { e.preventDefault(); showView(cotizadorView); get('nav-cotizador').classList.add('active'); });
@@ -57,100 +49,81 @@ document.addEventListener('DOMContentLoaded', function() {
         productModal.showModal();
     };
     
-function numeroALetras(num) {
-    if (num === null || num === undefined) {
-        return "Cero pesos 00/100 M.N.";
-    }
-
-    var numero = parseFloat(num).toFixed(2);
-    var [entero, decimales] = numero.split('.');
-
-    var unidades = ["", "un ", "dos ", "tres ", "cuatro ", "cinco ", "seis ", "siete ", "ocho ", "nueve "];
-    var decenas = ["diez ", "once ", "doce ", "trece ", "catorce ", "quince ", "dieciséis ", "diecisiete ", "dieciocho ", "diecinueve "];
-    var veintenas = ["", "", "veinte ", "treinta ", "cuarenta ", "cincuenta ", "sesenta ", "setenta ", "ochenta ", "noventa "];
-
-    var convertirDecenas = function(n) {
-        n = n % 100;
-        if (n === 0) return "";
-        if (n < 10) return unidades[n];
-        if (n < 20) return decenas[n - 10];
-        if (n > 20 && n < 30) return "veinti" + unidades[n % 10];
-        var d = Math.floor(n / 10);
-        var u = n % 10;
-        return veintenas[d] + (u > 0 ? "y " + unidades[u] : "");
-    };
-
-    var convertirCentenas = function(n) {
-        var centenas = "";
-        if (n > 99) {
-            if (n == 100) centenas = "cien ";
-            else {
-                var c = Math.floor(n / 100);
-                centenas = ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c];
-            }
-        }
-        return centenas;
-    };
-
-    var convertirMiles = function(n) {
-        if (n < 1000) return convertirCentenas(n) + convertirDecenas(n);
-        var miles = Math.floor(n / 1000);
-        var resto = n % 1000;
-        var milesTexto = "";
-
-        if (miles === 1) {
-            milesTexto = "mil ";
-        } else {
-            milesTexto = convertirCentenas(miles) + convertirDecenas(miles) + "mil ";
-        }
-        var restoTexto = convertirCentenas(resto) + convertirDecenas(resto);
-        return milesTexto + restoTexto;
-    };
-
-    // ✨ NUEVA FUNCIÓN PARA MANEJAR MILLONES ✨
-    var convertirMillones = function(n) {
-        if (n < 1000000) return convertirMiles(n);
-        
-        var millones = Math.floor(n / 1000000);
-        var resto = n % 1000000;
-        var millonesTexto = "";
-
-        if (millones === 1) {
-            millonesTexto = "un millón ";
-        } else {
-            // Llama a la función de miles para convertir el número de millones
-            millonesTexto = convertirMiles(millones) + "millones ";
-        }
-        
-        var restoTexto = convertirMiles(resto);
-        return millonesTexto + restoTexto;
-    };
-
-    var enteroLetras = "cero";
-    if (parseInt(entero) > 0) {
-        // Se llama a la nueva función de más alto nivel
-        enteroLetras = convertirMillones(parseInt(entero));
-    }
-    
-    var resultado = enteroLetras.trim() + " pesos " + decimales + "/100 M.N.";
-    return resultado.charAt(0).toUpperCase() + resultado.slice(1);
-}
-    
     get('fab-add-product').addEventListener('click', function() { openProductModal(); });
     get('btn-show-add-modal').addEventListener('click', function() { openProductModal(); });
     get('btn-cancelar-modal').addEventListener('click', function() { productModal.close(); });
 
     // ===== LÓGICA PRINCIPAL (CRUD, COTIZADOR, PDF) =====
     var formatCurrency = function(amount) {
-        // Convierte el número a un string con formato de moneda para México (es-MX),
-        // que usa comas para los miles y puntos para los decimales.
-        // También se asegura de que siempre haya dos decimales.
         var formattedAmount = parseFloat(amount || 0).toLocaleString('es-MX', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
         return '$' + formattedAmount;
     };
+
+    function numeroALetras(num) {
+        if (num === null || num === undefined) {
+            return "Cero pesos 00/100 M.N.";
+        }
+
+        var numero = parseFloat(num).toFixed(2);
+        var [entero, decimales] = numero.split('.');
+
+        var unidades = ["", "un ", "dos ", "tres ", "cuatro ", "cinco ", "seis ", "siete ", "ocho ", "nueve "];
+        var decenas = ["diez ", "once ", "doce ", "trece ", "catorce ", "quince ", "dieciséis ", "diecisiete ", "dieciocho ", "diecinueve "];
+        var veintenas = ["", "", "veinte ", "treinta ", "cuarenta ", "cincuenta ", "sesenta ", "setenta ", "ochenta ", "noventa "];
+
+        var convertirDecenas = function(n) {
+            n = n % 100;
+            if (n === 0) return "";
+            if (n < 10) return unidades[n];
+            if (n < 20) return decenas[n - 10];
+            if (n > 20 && n < 30) return "veinti" + unidades[n % 10];
+            var d = Math.floor(n / 10);
+            var u = n % 10;
+            return veintenas[d] + (u > 0 ? "y " + unidades[u] : "");
+        };
+
+        var convertirCentenas = function(n) {
+            if (n > 99) {
+                if (n == 100) return "cien ";
+                else {
+                    var c = Math.floor(n / 100);
+                    return ["", "ciento ", "doscientos ", "trescientos ", "cuatrocientos ", "quinientos ", "seiscientos ", "setecientos ", "ochocientos ", "novecientos "][c];
+                }
+            }
+            return "";
+        };
+
+        var convertirMiles = function(n) {
+            if (n < 1000) return convertirCentenas(n) + convertirDecenas(n);
+            var miles = Math.floor(n / 1000);
+            var resto = n % 1000;
+            var milesTexto = miles === 1 ? "mil " : (convertirCentenas(miles) + convertirDecenas(miles)) + "mil ";
+            var restoTexto = convertirCentenas(resto) + convertirDecenas(resto);
+            return milesTexto + restoTexto;
+        };
+
+        var convertirMillones = function(n) {
+            if (n < 1000000) return convertirMiles(n);
+            var millones = Math.floor(n / 1000000);
+            var resto = n % 1000000;
+            var millonesTexto = millones === 1 ? "un millón " : convertirMiles(millones) + "millones ";
+            var restoTexto = convertirMiles(resto);
+            return millonesTexto + restoTexto;
+        };
+
+        var enteroLetras = parseInt(entero) > 0 ? convertirMillones(parseInt(entero)) : "cero";
+        
+        // ✨ LÓGICA MODIFICADA ✨
+        // Comprueba si los decimales son mayores a "00"
+        var parteDecimal = parseInt(decimales) > 0 ? " " + decimales + "/100 M.N." : " 00/100 M.N.";
+        
+        var resultado = enteroLetras.trim() + " pesos" + parteDecimal;
+        return resultado.charAt(0).toUpperCase() + resultado.slice(1);
+    }
+    
     var saveProductsToLocalStorage = function() { localStorage.setItem('madereria_products', JSON.stringify(products)); };
     var loadProductsFromLocalStorage = function() {
         var stored = localStorage.getItem('madereria_products');
@@ -159,28 +132,20 @@ function numeroALetras(num) {
 
     var renderViews = function() {
         renderMaterialList();
-        renderPdfTable();
         renderAdminTable();
         renderProductSelector();
-        
-        var accionesFinales = document.querySelector('.acciones-finales');
-        if (quoteItems.length > 0) {
-            accionesFinales.classList.remove('hidden');
-        } else {
-            accionesFinales.classList.add('hidden');
-        }
     };
 
     var renderMaterialList = function() {
         var listContainer = get('cotizacion-list');
         listContainer.innerHTML = '';
-        var total = 0;
+        var subtotal = 0;
         
         quoteItems.forEach(function(item) {
             var product = products.find(function(p) { return p.id == item.id; });
             if (!product) return;
-            var subtotal = item.quantity * product.price;
-            total += subtotal;
+            var itemSubtotal = item.quantity * product.price;
+            subtotal += itemSubtotal;
 
             var listItem = document.createElement('div');
             listItem.className = 'list-item';
@@ -190,27 +155,43 @@ function numeroALetras(num) {
                     <div class="item-text">
                         <span class="text-primary">${product.name}</span>
                         <span class="text-secondary">
-                            Cantidad: 
-                            <input type="number" value="${item.quantity}" min="1" class="cantidad-input-list"> 
-                            @ ${formatCurrency(product.price)}
+                            Cantidad: <input type="number" value="${item.quantity}" min="1" class="cantidad-input-list"> @ ${formatCurrency(product.price)}
                         </span>
                     </div>
-                    <div class="item-subtotal">${formatCurrency(subtotal)}</div>
+                    <div class="item-subtotal">${formatCurrency(itemSubtotal)}</div>
                 </div>
                 <div class="item-actions">
                     <button class="btn-delete-item" title="Quitar producto">
                         <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
                     </button>
-                </div>
-            `;
+                </div>`;
             listContainer.appendChild(listItem);
         });
-        get('total-cotizacion-list').textContent = formatCurrency(total);
 
+        var ivaCheckbox = get('iva-checkbox');
+        var breakdownContainer = get('totals-breakdown');
+        var iva = 0;
+        var total = subtotal;
+
+        if (ivaCheckbox.checked) {
+            iva = subtotal * 0.16;
+            total = subtotal + iva;
+            breakdownContainer.innerHTML = `
+                <div class="total-line"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
+                <div class="total-line"><span>IVA (16%)</span><span>${formatCurrency(iva)}</span></div>
+                <div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
+        } else {
+            breakdownContainer.innerHTML = `<div class="total-line grand-total"><span>Total</span><span>${formatCurrency(total)}</span></div>`;
+        }
+        
         get('total-en-letra').textContent = numeroALetras(total);
-    };
-
-    var renderPdfTable = function() {
+        
+        var accionesFinales = document.querySelector('.acciones-finales');
+        if (quoteItems.length > 0) {
+            accionesFinales.classList.remove('hidden');
+        } else {
+            accionesFinales.classList.add('hidden');
+        }
     };
     
     var renderAdminTable = function() {
@@ -224,8 +205,7 @@ function numeroALetras(num) {
                 <td data-label="Acciones">
                     <button class="btn-editar" data-id="${p.id}">Editar</button>
                     <button class="btn-eliminar" data-id="${p.id}">Eliminar</button>
-                </td>
-            `;
+                </td>`;
             tableBody.appendChild(row);
         });
     };
@@ -276,37 +256,11 @@ function numeroALetras(num) {
         if (e.target.classList.contains('cantidad-input-list')) {
             var listItem = e.target.closest('.list-item');
             if (!listItem) return;
-
             var id = listItem.dataset.id;
             var newQuantity = parseInt(e.target.value, 10) || 0;
-
-            // 1. Actualiza los datos en el array
             var item = quoteItems.find(function(q) { return q.id == id; });
-            var product = products.find(function(p) { return p.id == id; });
-            
-            if (!item || !product) return;
-            item.quantity = newQuantity;
-
-            // 2. Actualiza solo el subtotal de la fila actual, sin redibujar todo
-            var subtotal = item.quantity * product.price;
-            var subtotalElement = listItem.querySelector('.item-subtotal');
-            if (subtotalElement) {
-                subtotalElement.textContent = formatCurrency(subtotal);
-            }
-
-            // 3. Recalcula y actualiza el total general
-            var grandTotal = 0;
-            quoteItems.forEach(function(quoteItem) {
-                var associatedProduct = products.find(function(p) { return p.id == quoteItem.id; });
-                if (associatedProduct) {
-                    grandTotal += quoteItem.quantity * associatedProduct.price;
-                }
-            });
-            get('total-cotizacion-list').textContent = formatCurrency(grandTotal);
-            get('total-en-letra').textContent = numeroALetras(grandTotal);
-
-            // 4. Mantiene la tabla oculta del PDF sincronizada (esto es seguro)
-            renderPdfTable();
+            if (item) item.quantity = newQuantity;
+            renderViews();
         }
     });
 
@@ -335,8 +289,9 @@ function numeroALetras(num) {
         }
     });
 
+    get('iva-checkbox').addEventListener('change', renderViews);
+
     get('btn-exportar-pdf').addEventListener('click', async function() {
-        // Función auxiliar para cargar una imagen y convertirla a Base64
         function loadImageAsDataURL(url) {
             return new Promise(function(resolve, reject) {
                 var img = new Image();
@@ -348,109 +303,125 @@ function numeroALetras(num) {
                     ctx.drawImage(this, 0, 0);
                     resolve(canvas.toDataURL('image/png'));
                 };
-                img.onerror = function() {
-                    reject(new Error('No se pudo cargar la imagen: ' + url));
-                };
+                img.onerror = function() { reject(new Error('No se pudo cargar la imagen: ' + url)); };
                 img.src = url;
             });
         }
 
         try {
-            // --- 1. Carga el logo primero ---
             var logoBase64 = await loadImageAsDataURL('logo.png');
-            
-            // --- 2. Recopila los datos del formulario ---
             var nombreCliente = get('cliente-nombre').value;
             var domicilioCliente = get('cliente-domicilio').value;
             var lugarCliente = get('cliente-lugar').value;
             var rfcCliente = get('cliente-rfc').value;
-            
-            // --- 3. Construye el PDF pieza por pieza ---
             var jsPDF = window.jspdf.jsPDF;
             var doc = new jsPDF('p', 'mm', 'a4');
+            var pageHeight = doc.internal.pageSize.getHeight();
+            var pageWidth = doc.internal.pageSize.getWidth();
+            var margin = 15;
+            var y = 20;
+            var lineHeight = 6;
 
-            var xOffset = 15; // Margen izquierdo
-            var yPosition = 20;
-            var lineHeight = 7;
-
-            // Dibuja el logo
-            doc.addImage(logoBase64, 'PNG', xOffset, yPosition - 10, 30, 30, 15); // Ajusta tamaño y posición
-
-            // Dibuja el encabezado de la empresa
+            doc.addImage(logoBase64, 'PNG', margin, y - 8, 30, 15);
             doc.setFontSize(20);
             doc.setFont("helvetica", "bold");
-            doc.text("MADERERÍA DÍAZ", xOffset + 35, yPosition);
-
-            // ... (El resto de la lógica programática que ya teníamos) ...
+            doc.text("MADERERÍA DÍAZ", margin + 35, y);
             doc.setFontSize(9);
             doc.setFont("helvetica", "normal");
-            yPosition += lineHeight;
-            doc.text("TABLAS - TABLONES - BARROTES - POLIN - TRIPLAY - FAJILLAS", xOffset + 35, yPosition);
-            doc.text("Bulevard de las Naciones 2029 local 3, Playa Diamante, Acapulco Diamante, C.P. 39897", xOffset + 35, yPosition + 5);
-            doc.text("R.F.C. DIRR850320F24 | Tel: 742-120-24-02 / 744-265-44-30", xOffset + 35, yPosition + 10);
-            doc.text("Fecha: " + (new Date().toISOString().slice(0, 10)), xOffset + 35, yPosition + 15);
+            y += 5;
+            doc.text("TABLAS - TABLONES - BARROTES - POLIN - TRIPLAY - FAJILLAS", margin + 35, y);
+            y += 4;
+            doc.text("Bulevard de las Naciones 2029 local 3, Playa Diamante, Acapulco Diamante, C.P. 39897", margin + 35, y);
+            y += 4;
+            doc.text("R.F.C. DIRR850320F24 | Tel: 742-120-24-02 / 744-265-44-30", margin + 35, y);
+            y += 4;
+            
+            var fechaActual = new Date();
+            var dia = ('0' + fechaActual.getDate()).slice(-2);
+            var mes = ('0' + (fechaActual.getMonth() + 1)).slice(-2); // Se suma 1 porque los meses empiezan en 0
+            var anio = fechaActual.getFullYear();
+            var fechaFormateada = dia + '/' + anio;
+            doc.text("Fecha: " + fechaFormateada, margin + 35, y);
 
-            yPosition += lineHeight * 4;
+            y += 12;
             doc.setFontSize(12);
             doc.setFont("helvetica", "bold");
-            doc.text("Datos del Cliente", xOffset, yPosition);
-            doc.line(xOffset, yPosition + 2, 195, yPosition + 2);
-
+            doc.text("Datos del Cliente", margin, y);
+            doc.setLineWidth(0.2);
+            doc.line(margin, y + 2, pageWidth - margin, y + 2);
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            yPosition += lineHeight;
-            doc.text("Nombre: " + nombreCliente, xOffset, yPosition);
-            doc.text("Domicilio: " + domicilioCliente, xOffset, yPosition + 5);
-            doc.text("Lugar: " + lugarCliente, xOffset, yPosition + 10);
-            doc.text("R.F.C: " + rfcCliente, xOffset, yPosition + 15);
+            y += lineHeight + 2;
+            doc.text("Nombre: " + nombreCliente, margin, y);
+            y += lineHeight;
+            doc.text("Domicilio: " + domicilioCliente, margin, y);
+            y += lineHeight;
+            doc.text("Lugar: " + lugarCliente, margin, y);
+            y += lineHeight;
+            doc.text("R.F.C: " + rfcCliente, margin, y);
 
-            yPosition += lineHeight * 3;
+            y += 12;
+            doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
-            doc.text("Cant.", xOffset, yPosition);
-            doc.text("Descripción", xOffset + 20, yPosition);
-            doc.text("P. Unit.", xOffset + 130, yPosition, { align: 'right' });
-            doc.text("Importe", xOffset + 175, yPosition, { align: 'right' });
-            doc.line(xOffset, yPosition + 2, 195, yPosition + 2);
-
-            yPosition += lineHeight;
+            doc.text("Cant.", margin, y);
+            doc.text("Descripción", margin + 20, y);
+            doc.text("P. Unit.", margin + 140, y, { align: 'right' });
+            doc.text("Importe", margin + 175, y, { align: 'right' });
+            doc.line(margin, y + 2, pageWidth - margin, y + 2);
+            y += lineHeight + 2;
             doc.setFont("helvetica", "normal");
-            var total = 0;
+            var subtotal = 0;
             var hasNomenclatura = false;
 
             quoteItems.forEach(function(item) {
+                if (y > pageHeight - 30) { doc.addPage(); y = 20; }
                 var product = products.find(function(p) { return p.id == item.id; });
-                hasNomenclatura = /\(Primera|Segunda|Tercera\)/g.test(product.name);
-
                 if (!product) return;
-
-                var subtotal = item.quantity * product.price;
-                total += subtotal;
+                if (!hasNomenclatura && /\(Primera|Segunda|Tercera\)/g.test(product.name)) { hasNomenclatura = true; }
+                var itemSubtotal = item.quantity * product.price;
+                subtotal += itemSubtotal;
                 var descriptionLines = doc.splitTextToSize(product.name, 90);
-
-                doc.text(String(item.quantity), xOffset + 5, yPosition, { align: 'center' });
-                doc.text(descriptionLines, xOffset + 20, yPosition);
-                doc.text(formatCurrency(product.price), xOffset + 130, yPosition, { align: 'right' });
-                doc.text(formatCurrency(subtotal), xOffset + 175, yPosition, { align: 'right' });
-
-                yPosition += (descriptionLines.length * 5) + 3;
+                doc.text(String(item.quantity), margin + 5, y, { align: 'center' });
+                doc.text(descriptionLines, margin + 20, y);
+                doc.text(formatCurrency(product.price), margin + 140, y, { align: 'right' });
+                doc.text(formatCurrency(itemSubtotal), margin + 175, y, { align: 'right' });
+                y += (descriptionLines.length * 5) + 2;
             });
 
-            doc.line(xOffset, yPosition, 195, yPosition);
-            yPosition += lineHeight;
-
+            doc.line(margin, y, pageWidth - margin, y);
+            y += lineHeight;
             if (hasNomenclatura) {
-                doc.setFont("helvetica");
-                doc.text("Nomenclatura:", xOffset, yPosition, { align: 'left' });
-                doc.text("- (Primera): Madera de primera", xOffset, yPosition + 5, { align: 'left' });
-                doc.text("- (Segunda): Madera de segunda", xOffset, yPosition + 10, { align: 'left' });
-                doc.text("- (Tercera): Madera de tercera", xOffset, yPosition + 15, { align: 'left' });
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "italic");
+                doc.text("Nomenclatura: (Primera): Madera de primera, (Segunda): Madera de segunda, (Tercera): Madera de tercera.", margin, y);
+                y += 10;
             }
-
+            
+            var ivaCheckbox = get('iva-checkbox');
+            var iva = 0;
+            var total = subtotal;
             doc.setFont("helvetica", "bold");
-            doc.text("TOTAL:", xOffset + 130, yPosition, { align: 'right' });
-            doc.text(formatCurrency(total), xOffset + 175, yPosition, { align: 'right' });
-            doc.text("(" + numeroALetras(total) + ")", xOffset + 175, yPosition + 5, { align: 'right' });
-
+            doc.setFontSize(10);
+            if (ivaCheckbox.checked) {
+                iva = subtotal * 0.16;
+                total = subtotal + iva;
+                doc.text("Subtotal:", margin + 140, y, { align: 'right' });
+                doc.text(formatCurrency(subtotal), margin + 175, y, { align: 'right' });
+                y += lineHeight;
+                doc.text("IVA (16%):", margin + 140, y, { align: 'right' });
+                doc.text(formatCurrency(iva), margin + 175, y, { align: 'right' });
+                y += lineHeight;
+            }
+            doc.setFontSize(11);
+            doc.text("Total:", margin + 140, y, { align: 'right' });
+            doc.text(formatCurrency(total), margin + 175, y, { align: 'right' });
+            y += lineHeight;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            var totalEnLetras = numeroALetras(total);
+            var textoLargo = doc.splitTextToSize("(" + totalEnLetras + ")", 80);
+            doc.text(textoLargo, margin + 175, y, { align: 'right' });
+            
             doc.save('cotizacion-madereria-diaz-' + new Date().toISOString().slice(0, 10) + '.pdf');
 
         } catch (error) {
