@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var y = 20;
             var lineHeight = 6;
 
-            doc.addImage(logoBase64, 'PNG', margin, y - 8, 30, 15);
+            doc.addImage(logoBase64, 'PNG', margin, y - 8, 30, 30, 15);
             doc.setFontSize(20);
             doc.setFont("helvetica", "bold");
             doc.text("MADERERÍA DÍAZ", margin + 35, y);
