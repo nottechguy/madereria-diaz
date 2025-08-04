@@ -236,10 +236,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             var logoBase64 = await loadImageAsDataURL('logo.png');
-            var nombreCliente = get('cliente-nombre').value;
-            var domicilioCliente = get('cliente-domicilio').value;
-            var lugarCliente = get('cliente-lugar').value;
-            var rfcCliente = get('cliente-rfc').value;
+            var nombreCliente = get('cliente-nombre').value.trim();
+            var domicilioCliente = get('cliente-domicilio').value.trim();
+            var lugarCliente = get('cliente-lugar').value.trim();
+            var rfcCliente = get('cliente-rfc').value.trim();
             var jsPDF = window.jspdf.jsPDF;
             var doc = new jsPDF('p', 'mm', 'a4');
             var pageHeight = doc.internal.pageSize.getHeight();
@@ -347,8 +347,16 @@ document.addEventListener('DOMContentLoaded', function() {
             var totalEnLetras = numeroALetras(total);
             var textoLargo = doc.splitTextToSize("(" + totalEnLetras + ")", 80);
             doc.text(textoLargo, margin + 175, y, { align: 'right' });
-            
-            doc.save('cotizacion-madereria-diaz-' + new Date().toISOString().slice(0, 10) + '.pdf');
+            var docname = 'cotizacion-madereria-diaz-';
+            var docFecha = anio + '-' + mes + '-' + dia;
+
+            if (nombreCliente != '') {
+                docname = docname + nombreCliente.replace(/\s+/g, '-') + '-' + docFecha;
+            } else {
+                docname = docname + docFecha;
+            }
+
+            doc.save(docname + '.pdf');
 
         } catch (error) {
             console.error("Error al generar el PDF:", error);
